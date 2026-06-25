@@ -74,6 +74,40 @@ public class MilestoneController {
         );
     }
 
+    @PatchMapping(
+            "/api/v1/milestones/{milestoneId}/move-up"
+    )
+    public ResponseEntity<ApiResponse<MilestoneResponse>>
+    moveUp(
+            @PathVariable UUID milestoneId
+    ) {
+
+        return ResponseUtil.ok(
+                "Milestone moved up successfully",
+                milestoneService.moveUp(
+                        milestoneId
+                )
+        );
+
+    }
+
+    @PatchMapping(
+            "/api/v1/milestones/{milestoneId}/move-down"
+    )
+    public ResponseEntity<ApiResponse<MilestoneResponse>>
+    moveDown(
+            @PathVariable UUID milestoneId
+    ) {
+
+        return ResponseUtil.ok(
+                "Milestone moved down successfully",
+                milestoneService.moveDown(
+                        milestoneId
+                )
+        );
+
+    }
+
     @DeleteMapping(
             "/api/v1/milestones/{milestoneId}"
     )

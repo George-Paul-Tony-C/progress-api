@@ -23,6 +23,14 @@ public interface MilestoneService {
             UpdateMilestoneRequest request
     );
 
+    MilestoneResponse moveUp(
+            UUID milestoneId
+    );
+
+    MilestoneResponse moveDown(
+            UUID milestoneId
+    );
+
     void delete(
             UUID milestoneId
     );

@@ -13,11 +13,14 @@ import in.georgepaultony.progress.roadmap.repository.RoadmapMilestoneRepository;
 import in.georgepaultony.progress.roadmap.repository.RoadmapRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class MilestoneServiceImpl
         implements MilestoneService {
@@ -54,18 +57,33 @@ public class MilestoneServiceImpl
         RoadmapMilestone milestone =
                 milestoneMapper.toEntity(request);
 
-        milestone.setRoadmap(roadmap);
+        milestone.setRoadmap(
+                roadmap
+        );
 
-        if (milestone.getCompleted() == null) {
-            milestone.setCompleted(false);
-        }
+        milestone.setCompleted(
+                false
+        );
+
+        Integer nextOrder =
+                milestoneRepository
+                        .countByRoadmapIdAndIsDeletedFalse(
+                                roadmapId
+                        ) + 1;
+
+        milestone.setOrderNumber(
+                nextOrder
+        );
 
         milestone =
-                milestoneRepository.save(milestone);
+                milestoneRepository.save(
+                        milestone
+                );
 
         return milestoneMapper.toResponse(
                 milestone
         );
+
     }
 
     @Override
@@ -155,6 +173,30 @@ public class MilestoneServiceImpl
     }
 
     @Override
+    public MilestoneResponse moveUp(
+            UUID milestoneId
+    ) {
+
+        return move(
+                milestoneId,
+                -1
+        );
+
+    }
+
+    @Override
+    public MilestoneResponse moveDown(
+            UUID milestoneId
+    ) {
+
+        return move(
+                milestoneId,
+                1
+        );
+
+    }
+
+    @Override
     public void delete(
             UUID milestoneId
     ) {
@@ -181,6 +223,86 @@ public class MilestoneServiceImpl
         milestoneRepository.save(
                 milestone
         );
+    }
+
+    private MilestoneResponse move(
+            UUID milestoneId,
+            int direction
+    ) {
+
+        UUID userId =
+                currentUserProvider.getId();
+
+        RoadmapMilestone current =
+                milestoneRepository.findById(
+                                milestoneId
+                        )
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Milestone not found"
+                                ));
+
+        validateMilestoneOwnership(
+                current,
+                userId
+        );
+
+        int targetOrder =
+                current.getOrderNumber()
+                        + direction;
+
+        if (targetOrder <= 0) {
+
+            return milestoneMapper.toResponse(
+                    current
+            );
+
+        }
+
+        Optional<RoadmapMilestone> neighbourOptional =
+                milestoneRepository
+                        .findByRoadmapIdAndOrderNumberAndIsDeletedFalse(
+
+                                current.getRoadmap().getId(),
+
+                                targetOrder
+
+                        );
+
+        if (neighbourOptional.isEmpty()) {
+
+            return milestoneMapper.toResponse(
+                    current
+            );
+
+        }
+
+        RoadmapMilestone neighbour =
+                neighbourOptional.get();
+
+        Integer currentOrder =
+                current.getOrderNumber();
+
+        current.setOrderNumber(
+                neighbour.getOrderNumber()
+        );
+
+        neighbour.setOrderNumber(
+                currentOrder
+        );
+
+        milestoneRepository.save(
+                current
+        );
+
+        milestoneRepository.save(
+                neighbour
+        );
+
+        return milestoneMapper.toResponse(
+                current
+        );
+
     }
 
     private void validateRoadmapOwnership(

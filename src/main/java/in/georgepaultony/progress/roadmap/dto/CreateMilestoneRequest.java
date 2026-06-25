@@ -8,10 +8,6 @@ public record CreateMilestoneRequest(
         @NotBlank
         String title,
 
-        String description,
-
-        @NotNull
-        Integer orderNumber
-
+        String description
 ) {
 }
